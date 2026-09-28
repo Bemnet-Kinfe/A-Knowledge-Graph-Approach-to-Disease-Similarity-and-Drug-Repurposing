@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Drug Repurposing | PrimeKG Explorer</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --deep-blue: #0B3C5D;
+      --deep-blue-light: #14528a;
+      --bg-light: #f5f7fb;
+      --text-main: #111111;
+      --text-muted: #555555;
+      --border-soft: #d6d9e4;
+    }
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-main);
+    }
+    header {
+      background: var(--deep-blue);
+      color: white;
+      padding: 16px 32px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 600;
+    }
+    header p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 24px auto 40px;
+      padding: 0 16px;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      border: 1px solid var(--border-soft);
+      box-shadow: 0 4px 10px rgba(11,60,93,0.06);
+      padding: 18px 20px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--deep-blue);
+      margin-bottom: 8px;
+    }
+    .card-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 14px;
+    }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group label {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+
+    input[type="text"], input[type="number"], select {
+      padding: 7px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border-soft);
+      font-size: 14px;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--deep-blue-light);
+      box-shadow: 0 0 0 2px rgba(11,60,93,0.15);
+    }
+
+    button {
+      padding: 7px 16px;
+      border-radius: 6px;
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      background: var(--deep-blue);
+      color: white;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button:hover { background: var(--deep-blue-light); }
+    button:disabled { opacity: 0.6; cursor: default; }
+
+    #rep-error {
+      min-height: 32px;
+      font-size: 13px;
+      color: #b00020;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    #rep-summary {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    #repChart { width: 100%; height: 460px; }
+
+    .pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: rgba(11,60,93,0.06);
+      color: var(--deep-blue);
+      margin-right: 6px;
+    }
+
+    .footer-note {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 12px;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+    .nav-link {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      padding-bottom: 2px;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease-in-out;
+    }
+    .nav-link:hover {
+      color: #ffffff;
+      border-bottom-color: rgba(255,255,255,0.6);
+    }
+    .nav-link.active {
+      color: #ffffff;
+      border-bottom-color: #ffffff;
+      font-weight: 600;
+    }
+
+    #rep-list {
+      margin-top: 10px;
+      border-top: 1px solid var(--border-soft);
+      padding-top: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .rep-item { margin-bottom: 4px; font-size: 13px; }
+    .rep-item summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--deep-blue);
+    }
+    .rep-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .rep-desc { font-size: 12px; margin-top: 4px; }
+
+    .no-match-box {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 20px;
+      border-radius: 12px;
+      border: 1px solid #e0e3ee;
+      background: #fff5f5;
+      margin-top: 16px;
+      font-size: 13px;
+      width: 100%;
+    }
+    .no-match-message { flex: 0 0 240px; color: #b00020; }
+    .no-match-title { margin: 0 0 4px; font-weight: 600; }
+    .no-match-subtitle { margin: 0; }
+
+    .no-match-suggestions {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .suggestion-chip {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #d3d7e5;
+      background: var(--deep-blue);
+      color: #ffffff; /* FIX: readable */
+      font-size: 12px;
+      line-height: 1.4;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .suggestion-chip:hover { background: var(--deep-blue-light); border-color: var(--deep-blue-light); }
+  </style>
+</head>
+
+<body>
+<header>
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <h1>PrimeKG Precision Medicine Explorer</h1>
+      <p>A Knowledge-Graph Approach to Disease Similarity and Drug Repurposing</p>
+    </div>
+    <nav class="nav-links">
+      <a href="/" class="nav-link">Overview</a>
+      <a href="/neighborhood" class="nav-link">Neighborhood</a>
+      <a href="/similarity" class="nav-link">Similarity</a>
+      <a href="/repurposing" class="nav-link active">Repurposing</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- Controls -->
+  <section class="card">
+    <div class="card-title">Drug Repurposing Candidates</div>
+    <div class="card-subtitle">
+      We first find diseases similar to your query (by shared genes or phenotypes),
+      then highlight drugs that treat those diseases but are not connected to the query
+      disease in PrimeKG.
+    </div>
+
+    <div id="controls">
+      <div class="form-group">
+        <label for="rep-disease">Base disease</label>
+        <input id="rep-disease" type="text" placeholder="breast cancer">
+      </div>
+
+      <div class="form-group">
+        <label for="rep-type">Similarity based on</label>
+        <select id="rep-type">
+          <option value="gene/protein">gene/protein</option>
+          <option value="effect/phenotype">effect/phenotype</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="rep-k">Top K similar diseases</label>
+        <input id="rep-k" type="number" min="1" max="50" value="10">
+      </div>
+
+      <div class="form-group">
+        <button id="rep-run">▶ Run repurposing</button>
+      </div>
+
+      <div id="rep-error"></div>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section class="card">
+    <div class="card-title">Repurposing candidates</div>
+    <div id="rep-summary"></div>
+    <div id="repChart"></div>
+
+    <div class="footer-note">
+      Bars show drugs that are linked to similar diseases but not to the base disease
+      in PrimeKG. <b>Bar length</b> = number of supporting diseases.
+    </div>
+
+    <div id="rep-list"></div>
+  </section>
+
+  <div class="footer-note">
+    Jaccard similarity (for picking similar diseases) is defined as
+    <code>|shared neighbors| / |neighbors in either disease|</code>,
+    where neighbors are nodes of the selected type (genes/proteins or phenotypes).
+    Drug candidates are those connected to ≥1 similar disease but not to the base disease.
+  </div>
+</div>
+
+<script>
+  async function fetchSimilarity(disease, neighborType, k) {
+    const url = `/api/disease_similarity?disease=${encodeURIComponent(disease)}&neighbor_type=${encodeURIComponent(neighborType)}&k=${encodeURIComponent(k)}`;
+    const resp = await fetch(url);
+    const data = await resp.json().catch(() => ({}));
+
+    if (!resp.ok) {
+      return { error: data.error || `HTTP error ${resp.status}`, suggestions: data.suggestions || [] };
+    }
+    return data;
+  }
+
+  async function fetchRepurposing(baseDisease, similarIdsCsv) {
+    const url = `/api/repurposing?disease=${encodeURIComponent(baseDisease)}&similar_ids=${encodeURIComponent(similarIdsCsv)}`;
+    const resp = await fetch(url);
+    const data = await resp.json().catch(() => ({}));
+
+    if (!resp.ok) {
+      return { error: data.error || `HTTP error ${resp.status}`, suggestions: data.suggestions || [] };
+    }
+    return data;
+  }
+
+  function renderErrorBox(container, msg, suggestions) {
+    const html = `
+      <div class="no-match-box">
+        <div class="no-match-message">
+          <p class="no-match-title">${msg}</p>
+          ${suggestions && suggestions.length ? '<p class="no-match-subtitle">Try one of these:</p>' : ''}
+        </div>
+        <div class="no-match-suggestions">
+          ${(suggestions || []).map(name => `<button class="suggestion-chip" data-name="${name}">${name}</button>`).join("")}
+        </div>
+      </div>
+    `;
+    container.innerHTML = html;
+  }
+
+  function clearOutputs() {
+    Plotly.purge("repChart");
+    const listDiv = document.getElementById("rep-list");
+    const summaryDiv = document.getElementById("rep-summary");
+    if (listDiv) listDiv.innerHTML = "";
+    if (summaryDiv) summaryDiv.innerHTML = "";
+  }
+
+  function plotRepurposing(data) {
+    const raw = data.candidates || [];
+    const summaryDiv = document.getElementById("rep-summary");
+    const listDiv = document.getElementById("rep-list");
+
+    if (!raw.length) {
+      clearOutputs();
+      summaryDiv.innerHTML = "No repurposing candidates found with the current settings.";
+      return;
+    }
+
+    const byName = new Map();
+    for (const c of raw) {
+      const name = (c.drug_name || "").trim();
+      if (!name) continue;
+
+      const prev = byName.get(name);
+
+      const prevDiseases = new Set((prev?.supporting_diseases || []).map(String));
+      const newDiseases  = new Set((c.supporting_diseases || []).map(String));
+      const mergedDiseases = Array.from(new Set([...prevDiseases, ...newDiseases]));
+
+      const mergedSupport = Math.max(prev?.n_support ?? 0, c.n_support ?? 0, mergedDiseases.length);
+
+      byName.set(name, {
+        drug_name: name,
+        n_support: mergedSupport,
+        supporting_diseases: mergedDiseases,
+        description: prev?.description || c.description || ""
+      });
+    }
+
+    const candidates = Array.from(byName.values()).sort((a, b) => {
+      if (b.n_support !== a.n_support) return b.n_support - a.n_support;
+      return a.drug_name.localeCompare(b.drug_name);
+    });
+
+    const MAX_SHOW = 30;
+    const shown = candidates.slice(0, MAX_SHOW);
+
+    const y = shown.map(c => c.drug_name);
+    const x = shown.map(c => c.n_support);
+
+    const hoverText = shown.map(c => {
+      const diseases = (c.supporting_diseases || []).join(", ");
+      const desc = c.description ? `<br><br>${c.description}` : "";
+      return `<b>${c.drug_name}</b><br>` +
+             `Supporting diseases: ${c.n_support}<br>` +
+             `Diseases: ${diseases || "N/A"}` +
+             desc;
+    });
+
+    const trace = {
+      x, y,
+      type: "bar",
+      orientation: "h",
+      marker: { color: "#0B3C5D" },
+      text: hoverText,
+      hoverinfo: "text"
+    };
+
+    const layout = {
+      title: { text: `Drug candidates for <b>${data.base_disease_name}</b>`, font: { size: 18, color: "#0B3C5D" } },
+      xaxis: { title: { text: "# of supporting diseases", font: { size: 13 } } },
+      yaxis: {
+        automargin: true,
+        autorange: "reversed",
+        categoryorder: "array",
+        categoryarray: y
+      },
+      margin: { t: 60, l: 260, r: 20, b: 60 },
+      paper_bgcolor: "rgba(0,0,0,0)",
+      plot_bgcolor: "#ffffff"
+    };
+
+    Plotly.newPlot("repChart", [trace], layout, { responsive: true });
+
+    summaryDiv.innerHTML = `
+      <span class="pill">Base disease: ${data.base_disease_name}</span>
+      <span class="pill">Known drugs in PrimeKG: ${data.n_base_drugs}</span>
+      <span class="pill">Candidate drugs (shown): ${shown.length}</span>
+    `;
+
+    if (listDiv) {
+      listDiv.innerHTML = shown.map(c => {
+        const diseases = (c.supporting_diseases || []).join(", ");
+        const desc = c.description ? `<div class="rep-desc">${c.description}</div>` : "";
+        return `
+          <details class="rep-item">
+            <summary>${c.drug_name} · ${c.n_support} supporting disease(s)</summary>
+            <div class="rep-meta">Supporting diseases: ${diseases || "N/A"}</div>
+            ${desc}
+          </details>
+        `;
+      }).join("");
+    }
+  }
+
+  async function runRepurposing() {
+    const diseaseInput = document.getElementById("rep-disease");
+    const typeSelect = document.getElementById("rep-type");
+    const kInput = document.getElementById("rep-k");
+    const errorDiv = document.getElementById("rep-error");
+    const btn = document.getElementById("rep-run");
+
+    const disease = diseaseInput.value.trim();
+    const neighborType = typeSelect.value;
+    const k = parseInt(kInput.value || "10", 10);
+
+    errorDiv.innerHTML = "";
+    btn.disabled = true;
+    btn.textContent = "Running…";
+
+    try {
+      if (!disease) {
+        errorDiv.textContent = "Please enter a base disease.";
+        clearOutputs();
+        return;
+      }
+
+      const simData = await fetchSimilarity(disease, neighborType, k);
+      if (simData.error) {
+        renderErrorBox(errorDiv, simData.error, simData.suggestions || []);
+        clearOutputs();
+        return;
+      }
+
+      const results = simData.results || [];
+      if (!results.length) {
+        errorDiv.textContent = "No similar diseases found; try changing neighbor type or K.";
+        clearOutputs();
+        return;
+      }
+
+      const similarIdsCsv = results.map(r => r.disease_id).join(",");
+      const repData = await fetchRepurposing(disease, similarIdsCsv);
+
+      if (repData.error) {
+        renderErrorBox(errorDiv, repData.error, repData.suggestions || []);
+        clearOutputs();
+        return;
+      }
+
+      plotRepurposing(repData);
+    } catch (err) {
+      console.error(err);
+      errorDiv.textContent = err.message || "Unexpected error.";
+      clearOutputs();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "▶ Run repurposing";
+    }
+  }
+
+  document.getElementById("rep-run").addEventListener("click", runRepurposing);
+
+  document.getElementById("rep-disease").addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") runRepurposing();
+  });
+
+  document.addEventListener("click", (ev) => {
+    if (ev.target.classList.contains("suggestion-chip")) {
+      const name = ev.target.getAttribute("data-name");
+      document.getElementById("rep-disease").value = name;
+      runRepurposing();
+    }
+  });
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Drug Repurposing | PrimeKG Explorer</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --deep-blue: #0B3C5D;
+      --deep-blue-light: #14528a;
+      --bg-light: #f5f7fb;
+      --text-main: #111111;
+      --text-muted: #555555;
+      --border-soft: #d6d9e4;
+    }
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-main);
+    }
+    header {
+      background: var(--deep-blue);
+      color: white;
+      padding: 16px 32px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 600;
+    }
+    header p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 24px auto 40px;
+      padding: 0 16px;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      border: 1px solid var(--border-soft);
+      box-shadow: 0 4px 10px rgba(11,60,93,0.06);
+      padding: 18px 20px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--deep-blue);
+      margin-bottom: 8px;
+    }
+    .card-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 14px;
+    }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group label {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+
+    input[type="text"], input[type="number"], select {
+      padding: 7px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border-soft);
+      font-size: 14px;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--deep-blue-light);
+      box-shadow: 0 0 0 2px rgba(11,60,93,0.15);
+    }
+
+    button {
+      padding: 7px 16px;
+      border-radius: 6px;
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      background: var(--deep-blue);
+      color: white;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button:hover { background: var(--deep-blue-light); }
+    button:disabled { opacity: 0.6; cursor: default; }
+
+    #rep-error {
+      min-height: 32px;
+      font-size: 13px;
+      color: #b00020;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    #rep-summary {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    #repChart { width: 100%; height: 460px; }
+
+    .pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: rgba(11,60,93,0.06);
+      color: var(--deep-blue);
+      margin-right: 6px;
+    }
+
+    .footer-note {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 12px;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+    .nav-link {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      padding-bottom: 2px;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease-in-out;
+    }
+    .nav-link:hover {
+      color: #ffffff;
+      border-bottom-color: rgba(255,255,255,0.6);
+    }
+    .nav-link.active {
+      color: #ffffff;
+      border-bottom-color: #ffffff;
+      font-weight: 600;
+    }
+
+    #rep-list {
+      margin-top: 10px;
+      border-top: 1px solid var(--border-soft);
+      padding-top: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .rep-item { margin-bottom: 4px; font-size: 13px; }
+    .rep-item summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--deep-blue);
+    }
+    .rep-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .rep-desc { font-size: 12px; margin-top: 4px; }
+
+    .no-match-box {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 20px;
+      border-radius: 12px;
+      border: 1px solid #e0e3ee;
+      background: #fff5f5;
+      margin-top: 16px;
+      font-size: 13px;
+      width: 100%;
+    }
+    .no-match-message { flex: 0 0 240px; color: #b00020; }
+    .no-match-title { margin: 0 0 4px; font-weight: 600; }
+    .no-match-subtitle { margin: 0; }
+
+    .no-match-suggestions {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .suggestion-chip {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #d3d7e5;
+      background: var(--deep-blue);
+      color: #ffffff; /* FIX: readable */
+      font-size: 12px;
+      line-height: 1.4;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .suggestion-chip:hover { background: var(--deep-blue-light); border-color: var(--deep-blue-light); }
+  </style>
+</head>
+
+<body>
+<header>
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <h1>PrimeKG Precision Medicine Explorer</h1>
+      <p>A Knowledge-Graph Approach to Disease Similarity and Drug Repurposing</p>
+    </div>
+    <nav class="nav-links">
+      <a href="/" class="nav-link">Overview</a>
+      <a href="/neighborhood" class="nav-link">Neighborhood</a>
+      <a href="/similarity" class="nav-link">Similarity</a>
+      <a href="/repurposing" class="nav-link active">Repurposing</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- Controls -->
+  <section class="card">
+    <div class="card-title">Drug Repurposing Candidates</div>
+    <div class="card-subtitle">
+      We first find diseases similar to your query (by shared genes or phenotypes),
+      then highlight drugs that treat those diseases but are not connected to the query
+      disease in PrimeKG.
+    </div>
+
+    <div id="controls">
+      <div class="form-group">
+        <label for="rep-disease">Base disease</label>
+        <input id="rep-disease" type="text" placeholder="breast cancer">
+      </div>
+
+      <div class="form-group">
+        <label for="rep-type">Similarity based on</label>
+        <select id="rep-type">
+          <option value="gene/protein">gene/protein</option>
+          <option value="effect/phenotype">effect/phenotype</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="rep-k">Top K similar diseases</label>
+        <input id="rep-k" type="number" min="1" max="50" value="10">
+      </div>
+
+      <div class="form-group">
+        <button id="rep-run">▶ Run repurposing</button>
+      </div>
+
+      <div id="rep-error"></div>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section class="card">
+    <div class="card-title">Repurposing candidates</div>
+    <div id="rep-summary"></div>
+    <div id="repChart"></div>
+
+    <div class="footer-note">
+      Bars show drugs that are linked to similar diseases but not to the base disease
+      in PrimeKG. <b>Bar length</b> = number of supporting diseases.
+    </div>
+
+    <div id="rep-list"></div>
+  </section>
+
+  <div class="footer-note">
+    Jaccard similarity (for picking similar diseases) is defined as
+    <code>|shared neighbors| / |neighbors in either disease|</code>,
+    where neighbors are nodes of the selected type (genes/proteins or phenotypes).
+    Drug candidates are those connected to ≥1 similar disease but not to the base disease.
+  </div>
+</div>
+
+<script>
+  async function fetchSimilarity(disease, neighborType, k) {
+    const url = `/api/disease_similarity?disease=${encodeURIComponent(disease)}&neighbor_type=${encodeURIComponent(neighborType)}&k=${encodeURIComponent(k)}`;
+    const resp = await fetch(url);
+    const data = await resp.json().catch(() => ({}));
+
+    if (!resp.ok) {
+      return { error: data.error || `HTTP error ${resp.status}`, suggestions: data.suggestions || [] };
+    }
+    return data;
+  }
+
+  async function fetchRepurposing(baseDisease, similarIdsCsv) {
+    const url = `/api/repurposing?disease=${encodeURIComponent(baseDisease)}&similar_ids=${encodeURIComponent(similarIdsCsv)}`;
+    const resp = await fetch(url);
+    const data = await resp.json().catch(() => ({}));
+
+    if (!resp.ok) {
+      return { error: data.error || `HTTP error ${resp.status}`, suggestions: data.suggestions || [] };
+    }
+    return data;
+  }
+
+  function renderErrorBox(container, msg, suggestions) {
+    const html = `
+      <div class="no-match-box">
+        <div class="no-match-message">
+          <p class="no-match-title">${msg}</p>
+          ${suggestions && suggestions.length ? '<p class="no-match-subtitle">Try one of these:</p>' : ''}
+        </div>
+        <div class="no-match-suggestions">
+          ${(suggestions || []).map(name => `<button class="suggestion-chip" data-name="${name}">${name}</button>`).join("")}
+        </div>
+      </div>
+    `;
+    container.innerHTML = html;
+  }
+
+  function clearOutputs() {
+    Plotly.purge("repChart");
+    const listDiv = document.getElementById("rep-list");
+    const summaryDiv = document.getElementById("rep-summary");
+    if (listDiv) listDiv.innerHTML = "";
+    if (summaryDiv) summaryDiv.innerHTML = "";
+  }
+
+  function plotRepurposing(data) {
+    const raw = data.candidates || [];
+    const summaryDiv = document.getElementById("rep-summary");
+    const listDiv = document.getElementById("rep-list");
+
+    if (!raw.length) {
+      clearOutputs();
+      summaryDiv.innerHTML = "No repurposing candidates found with the current settings.";
+      return;
+    }
+
+    const byName = new Map();
+    for (const c of raw) {
+      const name = (c.drug_name || "").trim();
+      if (!name) continue;
+
+      const prev = byName.get(name);
+
+      const prevDiseases = new Set((prev?.supporting_diseases || []).map(String));
+      const newDiseases  = new Set((c.supporting_diseases || []).map(String));
+      const mergedDiseases = Array.from(new Set([...prevDiseases, ...newDiseases]));
+
+      const mergedSupport = Math.max(prev?.n_support ?? 0, c.n_support ?? 0, mergedDiseases.length);
+
+      byName.set(name, {
+        drug_name: name,
+        n_support: mergedSupport,
+        supporting_diseases: mergedDiseases,
+        description: prev?.description || c.description || ""
+      });
+    }
+
+    const candidates = Array.from(byName.values()).sort((a, b) => {
+      if (b.n_support !== a.n_support) return b.n_support - a.n_support;
+      return a.drug_name.localeCompare(b.drug_name);
+    });
+
+    const MAX_SHOW = 30;
+    const shown = candidates.slice(0, MAX_SHOW);
+
+    const y = shown.map(c => c.drug_name);
+    const x = shown.map(c => c.n_support);
+
+    const hoverText = shown.map(c => {
+      const diseases = (c.supporting_diseases || []).join(", ");
+      const desc = c.description ? `<br><br>${c.description}` : "";
+      return `<b>${c.drug_name}</b><br>` +
+             `Supporting diseases: ${c.n_support}<br>` +
+             `Diseases: ${diseases || "N/A"}` +
+             desc;
+    });
+
+    const trace = {
+      x, y,
+      type: "bar",
+      orientation: "h",
+      marker: { color: "#0B3C5D" },
+      text: hoverText,
+      hoverinfo: "text"
+    };
+
+    const layout = {
+      title: { text: `Drug candidates for <b>${data.base_disease_name}</b>`, font: { size: 18, color: "#0B3C5D" } },
+      xaxis: { title: { text: "# of supporting diseases", font: { size: 13 } } },
+      yaxis: {
+        automargin: true,
+        autorange: "reversed",
+        categoryorder: "array",
+        categoryarray: y
+      },
+      margin: { t: 60, l: 260, r: 20, b: 60 },
+      paper_bgcolor: "rgba(0,0,0,0)",
+      plot_bgcolor: "#ffffff"
+    };
+
+    Plotly.newPlot("repChart", [trace], layout, { responsive: true });
+
+    summaryDiv.innerHTML = `
+      <span class="pill">Base disease: ${data.base_disease_name}</span>
+      <span class="pill">Known drugs in PrimeKG: ${data.n_base_drugs}</span>
+      <span class="pill">Candidate drugs (shown): ${shown.length}</span>
+    `;
+
+    if (listDiv) {
+      listDiv.innerHTML = shown.map(c => {
+        const diseases = (c.supporting_diseases || []).join(", ");
+        const desc = c.description ? `<div class="rep-desc">${c.description}</div>` : "";
+        return `
+          <details class="rep-item">
+            <summary>${c.drug_name} · ${c.n_support} supporting disease(s)</summary>
+            <div class="rep-meta">Supporting diseases: ${diseases || "N/A"}</div>
+            ${desc}
+          </details>
+        `;
+      }).join("");
+    }
+  }
+
+  async function runRepurposing() {
+    const diseaseInput = document.getElementById("rep-disease");
+    const typeSelect = document.getElementById("rep-type");
+    const kInput = document.getElementById("rep-k");
+    const errorDiv = document.getElementById("rep-error");
+    const btn = document.getElementById("rep-run");
+
+    const disease = diseaseInput.value.trim();
+    const neighborType = typeSelect.value;
+    const k = parseInt(kInput.value || "10", 10);
+
+    errorDiv.innerHTML = "";
+    btn.disabled = true;
+    btn.textContent = "Running…";
+
+    try {
+      if (!disease) {
+        errorDiv.textContent = "Please enter a base disease.";
+        clearOutputs();
+        return;
+      }
+
+      const simData = await fetchSimilarity(disease, neighborType, k);
+      if (simData.error) {
+        renderErrorBox(errorDiv, simData.error, simData.suggestions || []);
+        clearOutputs();
+        return;
+      }
+
+      const results = simData.results || [];
+      if (!results.length) {
+        errorDiv.textContent = "No similar diseases found; try changing neighbor type or K.";
+        clearOutputs();
+        return;
+      }
+
+      const similarIdsCsv = results.map(r => r.disease_id).join(",");
+      const repData = await fetchRepurposing(disease, similarIdsCsv);
+
+      if (repData.error) {
+        renderErrorBox(errorDiv, repData.error, repData.suggestions || []);
+        clearOutputs();
+        return;
+      }
+
+      plotRepurposing(repData);
+    } catch (err) {
+      console.error(err);
+      errorDiv.textContent = err.message || "Unexpected error.";
+      clearOutputs();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "▶ Run repurposing";
+    }
+  }
+
+  document.getElementById("rep-run").addEventListener("click", runRepurposing);
+
+  document.getElementById("rep-disease").addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") runRepurposing();
+  });
+
+  document.addEventListener("click", (ev) => {
+    if (ev.target.classList.contains("suggestion-chip")) {
+      const name = ev.target.getAttribute("data-name");
+      document.getElementById("rep-disease").value = name;
+      runRepurposing();
+    }
+  });
+</script>
+</body>
+</html>
