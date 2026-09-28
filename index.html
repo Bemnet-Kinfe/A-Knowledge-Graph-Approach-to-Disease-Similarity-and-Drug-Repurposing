@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PrimeKG Precision Medicine Explorer</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --deep-blue: #0B3C5D;
+            --deep-blue-light: #14528a;
+            --bg-light: #f5f7fb;
+            --text-main: #111111;
+            --text-muted: #555555;
+            --border-soft: #d6d9e4;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-main);
+        }
+
+        header {
+            background: var(--deep-blue);
+            color: white;
+            padding: 16px 32px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        header p {
+            margin: 4px 0 0;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .page {
+            max-width: 1100px;
+            margin: 24px auto 40px;
+            padding: 0 16px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            border: 1px solid var(--border-soft);
+            box-shadow: 0 4px 10px rgba(11, 60, 93, 0.06);
+            padding: 18px 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--deep-blue);
+            margin-bottom: 8px;
+        }
+
+        .card-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        #controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;      
+            gap: 14px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 3px;
+        }
+
+        #disease-input {
+            padding: 7px 10px;
+            min-width: 260px;
+            border-radius: 6px;
+            border: 1px solid var(--border-soft);
+            font-size: 14px;
+        }
+
+        #disease-input:focus {
+            outline: none;
+            border-color: var(--deep-blue-light);
+            box-shadow: 0 0 0 2px rgba(11, 60, 93, 0.15);
+        }
+
+        button {
+            padding: 7px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            background: var(--deep-blue);
+            color: white;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button:hover {
+            background: var(--deep-blue-light);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        #error {
+            min-height: 40px;
+            font-size: 13px;
+            color: #b00020;
+            display: flex;
+            align-items: center;
+        }
+
+        #summary {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        #myChart {
+            width: 100%;
+            height: 460px;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            background: rgba(11, 60, 93, 0.06);
+            color: var(--deep-blue);
+            margin-right: 6px;
+        }
+
+        .footer-note {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .neighbor-details-card {
+            margin-top: 10px;
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid var(--border-soft);
+            padding: 10px 14px;
+            font-size: 13px;
+        }
+
+        .neighbor-details-title {
+            font-weight: 600;
+            color: var(--deep-blue);
+            margin-bottom: 6px;
+        }
+
+        .neighbor-details-body {
+            max-height: 220px;     
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .neighbor-details-list-item {
+            padding: 2px 0;
+            border-bottom: 1px solid #f0f2f8;
+        }
+
+        .neighbor-details-placeholder {
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .no-match-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 1px solid #e0e3ee;
+            background: #fff5f5;
+            margin-top: 16px;
+            font-size: 13px;
+            width: 100%;
+        }
+
+        .no-match-message {
+            flex: 0 0 220px;
+            color: #b00020;
+        }
+
+        .no-match-title {
+            margin: 0 0 4px;
+            font-weight: 600;
+        }
+
+        .no-match-subtitle {
+            margin: 0;
+        }
+
+        .no-match-suggestions {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .suggestion-chip {
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid #d3d7e5;
+            background: #0B3C5D;
+            font-size: 12px;
+            line-height: 1.4;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .suggestion-chip:hover {
+            border-color: #0B3C5D;
+        }
+    </style>
+</head>
+<body>
+<header style="background:#0B3C5D; color:white; padding:16px 32px; box-shadow:0 2px 6px rgba(0,0,0,0.18);">
+  <style>
+    .nav-links {
+      display: flex;
+      gap: 12px;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+    .nav-link {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      padding-bottom: 2px;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease-in-out;
+    }
+    .nav-link:hover {
+      color: #ffffff;
+      border-bottom-color: rgba(255,255,255,0.6);
+    }
+    .nav-link.active {
+      color: #ffffff;
+      border-bottom-color: #ffffff;
+      font-weight: 600;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 600;
+    }
+    header p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: rgba(255,255,255,0.85);
+    }
+  </style>
+
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <h1>PrimeKG Precision Medicine Explorer</h1>
+      <p>A Knowledge-Graph Approach to Disease Similarity and Drug Repurposing</p>
+    </div>
+    <nav class="nav-links">
+      <a href="/" class="nav-link">Overview</a>
+      <a href="/neighborhood" class="nav-link active">Neighborhood</a>
+      <a href="/similarity" class="nav-link">Similarity</a>
+      <a href="/repurposing" class="nav-link">Repurposing</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page">
+
+    <!-- Controls card -->
+    <section class="card">
+        <div class="card-title">Disease Neighborhood Explorer</div>
+        <div class="card-subtitle">
+            Enter a disease name as it appears in PrimeKG (or close to it) and explore its connected genes, phenotypes, and drugs.
+        </div>
+
+        <div id="controls">
+            <div class="form-group">
+                <label for="disease-input">Disease</label>
+                <input id="disease-input" type="text" placeholder="osteogenesis imperfecta">
+            </div>
+            <div class="form-group">
+                <button id="run-btn">▶ Run analysis</button>
+            </div>
+            <div id="error"></div>
+        </div>
+    </section>
+
+    <!-- Results card -->
+    <section class="card">
+        <div class="card-title">Neighborhood summary</div>
+        <div id="summary"></div>
+        <div id="myChart"></div>
+
+        <!-- narrative sentence -->
+        <div id="narrative" class="footer-note"></div>
+
+        <!-- scrollable neighbor details panel -->
+        <div id="neighbor-details" class="neighbor-details-card">
+            <div class="neighbor-details-title">Neighbor details</div>
+            <div class="neighbor-details-body">
+                <p class="neighbor-details-placeholder">
+                    Click on a bar to see the full list of neighbors of that type.
+                </p>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            Bars represent counts of neighbors by node type. Hover to see counts; click a bar to view all connected nodes of that type in the panel below.
+        </div>
+    </section>
+
+</div>
+
+<script>
+    async function fetchDiseaseProfile(disease) {
+        const resp = await fetch(
+            `/api/disease_profile?disease=${encodeURIComponent(disease)}`
+        );
+        const data = await resp.json().catch(() => ({}));
+
+        if (!resp.ok) {
+            return {
+                error: data.error || `HTTP error ${resp.status}`,
+                suggestions: data.suggestions || []
+            };
+        }
+        return data;
+    }
+
+    // Bar chart and description
+    function plotNeighborCounts(data) {
+        const counts = data.neighbor_counts || {};
+        const categories = Object.keys(counts);
+        const values = categories.map(c => counts[c]);
+
+        const neighbors = data.neighbors || [];
+
+        const namesByType = {};
+        for (const n of neighbors) {
+            const t = n.type;
+            if (!namesByType[t]) namesByType[t] = [];
+            namesByType[t].push(n.name);
+        }
+
+        const nameLists = categories.map(cat => namesByType[cat] || []);
+
+        const trace = {
+            x: categories,
+            y: values,
+            type: "bar",
+            marker: {
+                color: "#0B3C5D"
+            },
+            customdata: nameLists,
+            hovertemplate:
+                "%{x}: %{y} neighbors<br>" +
+                "<span style='font-size:11px;color:#888'>Click to view details</span>" +
+                "<extra></extra>"
+        };
+
+        const layout = {
+            title: {
+                text: `Neighbor types for <b>${data.disease_name}</b>`,
+                font: { size: 18, color: "#0B3C5D" }
+            },
+            xaxis: {
+                title: { text: "Neighbor type", font: { size: 13 } },
+                tickangle: -20
+            },
+            yaxis: {
+                title: { text: "Count of neighbors", font: { size: 13 } }
+            },
+            margin: { t: 60, l: 60, r: 20, b: 80 },
+            paper_bgcolor: "rgba(0,0,0,0)",
+            plot_bgcolor: "#ffffff"
+        };
+
+        Plotly.newPlot("myChart", [trace], layout, {responsive: true}).then(() => {
+            const chart = document.getElementById("myChart");
+            const details = document.getElementById("neighbor-details");
+            const body = details.querySelector(".neighbor-details-body");
+            const titleEl = details.querySelector(".neighbor-details-title");
+
+            chart.on("plotly_click", function (evt) {
+                if (!evt.points || !evt.points.length) return;
+                const point = evt.points[0];
+
+                const type = point.x;               
+                const names = point.customdata || [];
+
+                titleEl.textContent = `${type} neighbors (${names.length})`;
+
+                if (!names.length) {
+                    body.innerHTML =
+                        "<p class='neighbor-details-placeholder'>No neighbors of this type.</p>";
+                    return;
+                }
+
+                body.innerHTML = names
+                    .map(n => `<div class="neighbor-details-list-item">${n}</div>`)
+                    .join("");
+            });
+        });
+    }
+
+    // Textual information after the bar chart
+    function buildNarrative(data) {
+        const counts = data.neighbor_counts || {};
+        const entries = Object.entries(counts);
+        if (!entries.length) return "";
+
+        const total = entries.reduce((acc, [, v]) => acc + v, 0);
+        const parts = entries.map(([type, count]) => {
+            const label = count === 1 ? type : `${type}s`;
+            return `${count} ${label}`;
+        });
+
+        return `<strong>${data.disease_name}</strong> has ${total} neighbors in PrimeKG: ${parts.join(", ")}.`;
+    }
+
+    function resetNeighborDetails() {
+        const details = document.getElementById("neighbor-details");
+        const body = details.querySelector(".neighbor-details-body");
+        const titleEl = details.querySelector(".neighbor-details-title");
+
+        titleEl.textContent = "Neighbor details";
+        body.innerHTML =
+            "<p class='neighbor-details-placeholder'>Click on a bar to see the full list of neighbors of that type.</p>";
+    }
+
+    async function runAnalysis() {
+        const input = document.getElementById("disease-input");
+        const errorDiv = document.getElementById("error");
+        const summaryDiv = document.getElementById("summary");
+        const narrativeDiv = document.getElementById("narrative");
+        const btn = document.getElementById("run-btn");
+
+        errorDiv.innerHTML = "";
+        summaryDiv.innerHTML = "";
+        narrativeDiv.innerHTML = "";
+        resetNeighborDetails();
+
+        const disease = input.value.trim();
+        if (!disease) {
+            errorDiv.textContent = "Please enter a disease name.";
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = "Running…";
+
+        try {
+            const data = await fetchDiseaseProfile(disease);
+
+            // Suggestion incase of error
+            if (data.error) {
+                const suggestions = data.suggestions || [];
+
+                const html = `
+                  <div class="no-match-box">
+                    <div class="no-match-message">
+                      <p class="no-match-title">${data.error}</p>
+                      ${
+                        suggestions.length
+                          ? '<p class="no-match-subtitle">Try one of these:</p>'
+                          : ""
+                      }
+                    </div>
+                    <div class="no-match-suggestions">
+                      ${
+                        suggestions
+                          .map(
+                            (name) =>
+                              `<button class="suggestion-chip" data-name="${name}">${name}</button>`
+                          )
+                          .join("")
+                      }
+                    </div>
+                  </div>
+                `;
+
+                errorDiv.innerHTML = html;
+                Plotly.purge("myChart");
+                return;
+            }
+
+            // Success case
+            const totalNeighbors = Object.values(data.neighbor_counts || {})
+                .reduce((a, b) => a + b, 0);
+
+            summaryDiv.innerHTML = `
+                <span class="pill">Disease ID: ${data.disease_id}</span>
+                <span class="pill">Total neighbors: ${totalNeighbors}</span>
+            `;
+
+            plotNeighborCounts(data);
+            narrativeDiv.innerHTML = buildNarrative(data);
+        } catch (err) {
+            console.error(err);
+            errorDiv.textContent = err.message || "Unexpected error.";
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "▶ Run analysis";
+        }
+    }
+
+    document.getElementById("run-btn").addEventListener("click", runAnalysis);
+
+    document.getElementById("disease-input").addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") {
+            runAnalysis();
+        }
+    });
+
+    document.addEventListener("click", (ev) => {
+        if (ev.target.classList.contains("suggestion-chip")) {
+            const name = ev.target.getAttribute("data-name");
+            const input = document.getElementById("disease-input");
+            input.value = name;
+            runAnalysis();
+        }
+    });
+
+</script>
+</body>
+</html>
