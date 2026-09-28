@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Disease–Disease Similarity | PrimeKG Explorer</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --deep-blue: #0B3C5D;
+            --deep-blue-light: #14528a;
+            --bg-light: #f5f7fb;
+            --text-main: #111111;
+            --text-muted: #555555;
+            --border-soft: #d6d9e4;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-main);
+        }
+        header {
+            background: var(--deep-blue);
+            color: white;
+            padding: 16px 32px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+        }
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 600;
+        }
+        header p {
+            margin: 4px 0 0;
+            font-size: 13px;
+            color: rgba(255,255,255,0.85);
+        }
+
+        .page {
+            max-width: 1100px;
+            margin: 24px auto 40px;
+            padding: 0 16px;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            border: 1px solid var(--border-soft);
+            box-shadow: 0 4px 10px rgba(11,60,93,0.06);
+            padding: 18px 20px;
+            margin-bottom: 20px;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--deep-blue);
+            margin-bottom: 8px;
+        }
+        .card-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        #controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 14px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 3px;
+        }
+
+        input[type="text"], input[type="number"], select {
+            padding: 7px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-soft);
+            font-size: 14px;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--deep-blue-light);
+            box-shadow: 0 0 0 2px rgba(11,60,93,0.15);
+        }
+
+        button {
+            padding: 7px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            background: var(--deep-blue);
+            color: white;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        button:hover { background: var(--deep-blue-light); }
+        button:disabled { opacity: 0.6; cursor: default; }
+
+        #error {
+            min-height: 32px;
+            font-size: 13px;
+            color: #b00020;
+            display: flex;
+            align-items: center;
+        }
+
+        #summary {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        #similarityChart {
+            width: 100%;
+            height: 460px;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            background: rgba(11,60,93,0.06);
+            color: var(--deep-blue);
+            margin-right: 6px;
+        }
+
+        .footer-note {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .nav-links {
+          display: flex;
+          gap: 12px;
+          font-size: 13px;
+          margin-top: 8px;
+        }
+        .nav-link {
+          color: rgba(255,255,255,0.85);
+          text-decoration: none;
+          padding-bottom: 2px;
+          border-bottom: 2px solid transparent;
+          transition: all 0.2s ease-in-out;
+        }
+        .nav-link:hover {
+          color: #ffffff;
+          border-bottom-color: rgba(255,255,255,0.6);
+        }
+        .nav-link.active {
+          color: #ffffff;
+          border-bottom-color: #ffffff;
+          font-weight: 600;
+        }
+
+        .no-match-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 1px solid #e0e3ee;
+            background: #fff5f5;
+            margin-top: 16px;
+            font-size: 13px;
+            width: 100%;
+        }
+
+        .no-match-message {
+            flex: 0 0 220px;
+            color: #b00020;
+        }
+
+        .no-match-title {
+            margin: 0 0 4px;
+            font-weight: 600;
+        }
+
+        .no-match-subtitle {
+            margin: 0;
+        }
+
+        .no-match-suggestions {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .suggestion-chip {
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid #d3d7e5;
+            background: #0B3C5D;
+            font-size: 12px;
+            line-height: 1.4;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .suggestion-chip:hover {
+            border-color: #0B3C5D;
+        }
+    </style>
+</head>
+<body>
+<header style="background:#0B3C5D; color:white; padding:16px 32px; box-shadow:0 2px 6px rgba(0,0,0,0.18);">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <h1>PrimeKG Precision Medicine Explorer</h1>
+      <p>A Knowledge-Graph Approach to Disease Similarity and Drug Repurposing</p>
+    </div>
+    <nav class="nav-links">
+      <a href="/" class="nav-link">Overview</a>
+      <a href="/neighborhood" class="nav-link">Neighborhood</a>
+      <a href="/similarity" class="nav-link active">Similarity</a>
+      <a href="/repurposing" class="nav-link">Repurposing</a>
+    </nav>
+  </div>
+</header>
+
+
+<div class="page">
+    <section class="card">
+        <div class="card-title">Disease–Disease Similarity</div>
+        <div class="card-subtitle">
+            Enter a disease and choose whether to compare based on shared
+            <strong>genes/proteins</strong> or <strong>phenotypes</strong>. We compute
+            the Jaccard similarity against all other diseases and return the top matches.
+        </div>
+
+        <div id="controls">
+            <div class="form-group">
+                <label for="sim-disease">Disease</label>
+                <input id="sim-disease" type="text" placeholder="breast cancer">
+            </div>
+            <div class="form-group">
+                <label for="sim-type">Neighbor type</label>
+                <select id="sim-type">
+                    <option value="gene/protein">gene/protein</option>
+                    <option value="effect/phenotype">effect/phenotype</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="sim-k">Top K diseases</label>
+                <input id="sim-k" type="number" min="1" max="50" value="10">
+            </div>
+            <div class="form-group">
+                <button id="sim-run">▶ Run similarity</button>
+            </div>
+            <div id="error"></div>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="card-title">Similarity results</div>
+        <div id="summary"></div>
+        <div id="similarityChart"></div>
+        <div class="footer-note">
+            Bars show Jaccard similarity scores between the query disease and other diseases
+            based on shared neighbors of the selected type.
+        </div>
+    </section>
+
+    <div class="footer-note">
+        <h3>Jaccard Similarity</h3>
+        <p>
+            Jaccard similarity shows how similar two diseases are based on the neighbors they share.
+        </p>
+        <p>
+            It looks at all neighbors of the selected type (for example, genes or phenotypes) that are
+            connected to each disease in PrimeKG, and computes:
+        </p>
+        <p>
+        <strong>Jaccard similarity</strong> =
+        <code>(number of shared neighbors) ÷ (total number of unique neighbors across both diseases)</code>
+        </p>
+        <p>
+        A higher Jaccard value means the two diseases share more of the same connections of that type.
+        </p>
+    </div>
+
+</div>
+
+<script>
+    // Calling API
+    async function fetchSimilarity(disease, neighborType, k) {
+        const url = `/api/disease_similarity?disease=${encodeURIComponent(
+            disease
+        )}&neighbor_type=${encodeURIComponent(
+            neighborType
+        )}&k=${encodeURIComponent(k)}`;
+
+        const resp = await fetch(url);
+        const data = await resp.json().catch(() => ({}));
+
+        if (!resp.ok) {
+            return {
+                error: data.error || `HTTP error ${resp.status}`,
+                suggestions: data.suggestions || [],
+            };
+        }
+        return data;
+    }
+
+    function plotSimilarity(data) {
+        const results = data.results || [];
+        const summaryDiv = document.getElementById("summary");
+
+        if (!results.length) {
+            Plotly.purge("similarityChart");
+            summaryDiv.innerHTML = "No similar diseases found for this setting.";
+            return;
+        }
+
+        const y = results.map((r) => r.disease_name);
+        const x = results.map((r) => r.jaccard);
+
+        const hoverText = results.map(
+            (r) =>
+                `<b>${r.disease_name}</b><br>` +
+                `Jaccard: ${r.jaccard.toFixed(3)}<br>` +
+                `Shared neighbors: ${r.n_shared}<br>` +
+                `Neighbors for query: ${r.n_query}<br>` +
+                `Neighbors for this disease: ${r.n_other}`
+        );
+
+        const trace = {
+            x,
+            y,
+            type: "bar",
+            orientation: "h",
+            marker: { color: "#0B3C5D" },
+            text: hoverText,
+            hoverinfo: "text+x",
+        };
+
+        const layout = {
+            title: {
+                text: `Top matches for <b>${data.query_disease_name}</b> (by ${data.neighbor_type})`,
+                font: { size: 18, color: "#0B3C5D" },
+            },
+            xaxis: {
+                title: { text: "Jaccard similarity", font: { size: 13 } },
+                range: [0, 1],
+            },
+            margin: { t: 60, l: 260, r: 20, b: 60 },
+            paper_bgcolor: "rgba(0,0,0,0)",
+            plot_bgcolor: "#ffffff",
+        };
+
+        Plotly.newPlot("similarityChart", [trace], layout, { responsive: true });
+
+        // Update summary
+        const neighborType = data.neighbor_type;
+        summaryDiv.innerHTML = `
+            <span class="pill">Query disease: ${data.query_disease_name}</span>
+            <span class="pill">Neighbor type: ${neighborType}</span>
+            <span class="pill">Top matches: ${results.length}</span>
+        `;
+    }
+
+    async function runSimilarity() {
+        const diseaseInput = document.getElementById("sim-disease");
+        const neighborSelect = document.getElementById("sim-type");
+        const kInput = document.getElementById("sim-k");
+        const errorDiv = document.getElementById("error");
+        const btn = document.getElementById("sim-run");
+
+        const disease = diseaseInput.value.trim();
+        const neighborType = neighborSelect.value;
+        const k = parseInt(kInput.value || "10", 10);
+
+        errorDiv.innerHTML = "";
+        btn.disabled = true;
+        btn.textContent = "Running…";
+
+        try {
+            if (!disease) {
+                errorDiv.textContent = "Please enter a disease name.";
+                Plotly.purge("similarityChart");
+                return;
+            }
+
+            const data = await fetchSimilarity(disease, neighborType, k);
+
+            if (data.error) {
+                const suggestions = data.suggestions || [];
+
+                const html = `
+                  <div class="no-match-box">
+                    <div class="no-match-message">
+                      <p class="no-match-title">${data.error}</p>
+                      ${
+                        suggestions.length
+                          ? '<p class="no-match-subtitle">Try one of these:</p>'
+                          : ""
+                      }
+                    </div>
+                    <div class="no-match-suggestions">
+                      ${
+                        suggestions
+                          .map(
+                            (name) =>
+                              `<button class="suggestion-chip" data-name="${name}">${name}</button>`
+                          )
+                          .join("")
+                      }
+                    </div>
+                  </div>
+                `;
+
+                errorDiv.innerHTML = html;
+                Plotly.purge("similarityChart");
+                return;
+            }
+
+            plotSimilarity(data);
+        } catch (err) {
+            console.error(err);
+            errorDiv.textContent = err.message || "Unexpected error.";
+            Plotly.purge("similarityChart");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "▶ Run similarity";
+        }
+    }
+
+    document.getElementById("sim-run").addEventListener("click", runSimilarity);
+
+    document
+        .getElementById("sim-disease")
+        .addEventListener("keydown", (ev) => {
+            if (ev.key === "Enter") {
+                runSimilarity();
+            }
+        });
+
+    document.addEventListener("click", (ev) => {
+        if (ev.target.classList.contains("suggestion-chip")) {
+            const name = ev.target.getAttribute("data-name");
+            const input = document.getElementById("sim-disease");
+            input.value = name;
+            runSimilarity();
+        }
+    });
+</script>
+</body>
+</html>
