@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PrimeKG Explorer | Overview</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    :root {
+      --deep-blue: #0B3C5D;
+      --deep-blue-light: #14528a;
+      --bg-light: #f5f7fb;
+      --text-main: #111111;
+      --text-muted: #555555;
+      --border-soft: #d6d9e4;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: "Inter", sans-serif;
+      background: var(--bg-light);
+      margin: 0;
+      color: var(--text-main);
+    }
+
+    header {
+      background: var(--deep-blue);
+      color: white;
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    header p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+
+    .nav-link {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      padding-bottom: 2px;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .nav-link:hover {
+      color: #ffffff;
+      border-bottom-color: rgba(255,255,255,0.6);
+    }
+
+    .nav-link.active {
+      color: #ffffff;
+      border-bottom-color: #ffffff;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 32px auto 60px;
+      padding: 0 20px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      border: 1px solid var(--border-soft);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      padding: 20px 24px;
+      margin-bottom: 18px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--deep-blue);
+      margin-bottom: 6px;
+    }
+
+    .card-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      font-size: 15px;
+      color: #14528a;
+      margin-top: 12px;
+      margin-bottom: 4px;
+    }
+
+    p, li {
+      font-size: 13px;
+      line-height: 1.55;
+      color: #333333;
+    }
+
+    ul {
+      margin-top: 4px;
+      padding-left: 20px;
+    }
+
+    details summary {
+      font-weight: 600;
+      color: var(--deep-blue);
+      cursor: pointer;
+      font-size: 14px;
+      margin: 6px 0;
+    }
+
+    details {
+      margin-bottom: 10px;
+      background: #fafbfc;
+      border: 1px solid #e1e4e8;
+      border-radius: 6px;
+      padding: 10px 14px;
+    }
+
+    a { color: #14528a; }
+
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    select {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border-soft);
+      font-size: 13px;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: var(--deep-blue-light);
+      box-shadow: 0 0 0 2px rgba(11,60,93,0.15);
+    }
+
+    button {
+      padding: 7px 14px;
+      border-radius: 6px;
+      border: none;
+      font-size: 13px;
+      font-weight: 500;
+      background: var(--deep-blue);
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover { background: var(--deep-blue-light); }
+    button:disabled { opacity: 0.6; cursor: default; }
+
+    #summary-error {
+      font-size: 12px;
+      color: #b00020;
+      min-height: 18px;
+    }
+
+    #summary-text {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .mini-table-wrap {
+      overflow-x: auto;
+      border: 1px solid #eef1f6;
+      border-radius: 10px;
+      margin-top: 12px;
+      background: #ffffff;
+    }
+
+    .mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      min-width: 760px;
+    }
+
+    .mini-table th, .mini-table td {
+      text-align: left;
+      padding: 10px 10px;
+      border-bottom: 1px solid #eef1f6;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+
+    .mini-table th {
+      color: var(--deep-blue);
+      font-weight: 600;
+      background: #fafbfc;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .mini-table td:nth-child(1),
+    .mini-table td:nth-child(3) {
+      white-space: normal;
+      min-width: 220px;
+    }
+
+    .mini-table td:nth-child(2) {
+      min-width: 160px;
+      white-space: normal;
+    }
+
+    .mini-table td:nth-child(4) {
+      min-width: 140px;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>PrimeKG Explorer</h1>
+    <p>Interactive Knowledge Graph for Disease Similarity and Drug Repurposing</p>
+  </div>
+  <nav class="nav-links">
+    <a href="/" class="nav-link active">Overview</a>
+    <a href="/neighborhood" class="nav-link">Neighborhood</a>
+    <a href="/similarity" class="nav-link">Similarity</a>
+    <a href="/repurposing" class="nav-link">Repurposing</a>
+  </nav>
+</header>
+
+<div class="page">
+
+  <!-- Information about the dataset -->
+  <section class="card">
+    <div class="card-title">About the Dataset</div>
+    <div class="card-subtitle">
+      PrimeKG is a precision medicine knowledge graph that integrates diseases, drugs, genes, phenotypes, and more into a single, computable network.
+    </div>
+
+    <p>
+      The dataset I’m using for this project is <strong>PrimeKG</strong>, developed by Chowdhury &amp; Zitnik (2023)
+      and made publicly available on the Harvard Dataverse under the
+      <em>Creative Commons CC0 1.0 Public Domain Dedication</em>.
+      This open license enables unrestricted use, modification, and sharing, which is ideal for open biomedical informatics research.
+    </p>
+
+    <p>
+      <strong>Citation:</strong> Chowdhury, S. N., &amp; Zitnik, M. (2023).
+      <em>PrimeKG: A Precision Medicine Knowledge Graph</em>. Harvard Dataverse.
+      https://doi.org/10.7910/DVN/IXA7BM
+    </p>
+
+    <h3>Dataset Overview</h3>
+    <p>
+      PrimeKG combines information from more than <strong>20 biomedical databases and ontologies</strong>,
+      linking over <strong>17,000 diseases</strong> through more than <strong>4 million relationships</strong> across
+      drugs, genes, proteins, pathways, phenotypes, side effects, and clinical guideline text.
+    </p>
+
+    <h3>Why It Is Interesting</h3>
+    <p>
+      PrimeKG captures the biological complexity of disease in a way that computers can work with.
+      It connects years of molecular biology, pharmacology, and clinical knowledge into a unified graph,
+      enabling questions such as:
+    </p>
+    <ul>
+      <li>Which diseases share molecular or phenotypic mechanisms?</li>
+      <li>Where are there treatment gaps or repurposing opportunities?</li>
+      <li>How do biological mechanisms align (or fail to align) with what appears in clinical data?</li>
+    </ul>
+  </section>
+
+  <!-- Data Acquisition -->
+  <section class="card">
+    <div class="card-title">Data Acquisition</div>
+    <p>
+      PrimeKG was obtained directly from the official project page
+      (<a href="https://zitniklab.hms.harvard.edu/projects/PrimeKG/" target="_blank">PrimeKG Project</a>)
+      on the Harvard Dataverse. The dataset is distributed as CSV files and can be downloaded via HTTPS without
+      authentication or API keys.
+    </p>
+  </section>
+
+  <!-- Data cleaning and preprocessing -->
+  <section class="card">
+    <div class="card-title">Data Cleaning &amp; Preprocessing</div>
+    <ul>
+      <li>Standardized all column names to lowercase to avoid case-sensitivity bugs.</li>
+      <li>Removed duplicate edges and duplicate node definitions.</li>
+      <li>Precomputed disease-neighbor sets for genes/proteins and phenotypes to speed up Jaccard similarity queries.</li>
+      <li>Normalized text for search (lowercased disease names) and added fuzzy suggestions for user input.</li>
+      <li>Handled missing or inconsistent entries conservatively by skipping them rather than guessing relationships.</li>
+    </ul>
+  </section>
+
+  <!-- Data cleaning results (removing duplicates) -->
+  <section class="card">
+    <div class="card-title">Cleaning results</div>
+    <p class="card-subtitle">
+      These counts summarize how the raw CSV files were transformed into the final, deduplicated graph used in the explorer.
+    </p>
+    <ul>
+      <li>
+        Loaded
+        <strong>{{ cleaning_stats.raw_node_rows | default(0) }}</strong>
+        node rows and
+        <strong>{{ cleaning_stats.raw_edge_rows | default(0) }}</strong>
+        edge rows from the raw PrimeKG CSV files.
+      </li>
+      <li>
+        Removed
+        <strong>{{ cleaning_stats.duplicate_node_ids_removed | default(0) }}</strong>
+        additional rows with repeated <code>node_id</code> values to ensure each node appears once.
+      </li>
+      {% if cleaning_stats.duplicate_node_ids_by_type %}
+      <li>
+        Duplicate <code>node_id</code> values were most common in:
+        {% for t, c in cleaning_stats.duplicate_node_ids_by_type.items() %}
+          <strong>{{ t }}</strong> ({{ c }}){% if not loop.last %},{% endif %}
+        {% endfor %}.
+      </li>
+      {% endif %}
+    </ul>
+  </section>
+
+  <!-- Summary Stats -->
+  <section class="card">
+    <div class="card-title">Summary statistics</div>
+    <div class="card-subtitle">
+      Summary stats are used here to give a high-level sense of the data:
+      which node types are most common, and which drugs or diseases dominate
+      the graph.
+    </div>
+
+    <div class="form-row">
+      <label for="summary-kind" style="font-size:13px;">Choose a view:</label>
+      <select id="summary-kind">
+        <option value="node_types">Node type distribution</option>
+        <option value="top_drugs">Top drugs by degree</option>
+        <option value="top_diseases_drug_neighbors">
+          Diseases with most drug neighbors
+        </option>
+        <option value="example_relations">Example relations (table)</option>
+      </select>
+      <button id="summary-run">▶ Show summary</button>
+      <div id="summary-error"></div>
+    </div>
+
+    <div id="summary-text"></div>
+    <div id="summaryChart" style="height:320px;"></div>
+    <div id="summaryTable"></div>
+  </section>
+
+  <!-- Analysis overview -->
+  <section class="card">
+    <div class="card-title">Analyses in This Explorer</div>
+    <details open>
+      <summary>Disease Neighborhood Explorer</summary>
+      <p>
+        Visualizes all directly connected nodes for a given disease, grouped by type (drug, gene/protein, phenotype, etc.).
+        Helps reveal how richly each disease is represented across biological and clinical dimensions.
+      </p>
+    </details>
+    <details>
+      <summary>Disease–Disease Similarity (Jaccard)</summary>
+      <p>
+        Computes similarity between diseases based on shared genes/proteins or shared phenotypes,
+        surfacing potentially related conditions and shared mechanisms.
+      </p>
+    </details>
+    <details>
+      <summary>Drug Repurposing Candidates</summary>
+      <p>
+        Identifies drugs that treat phenotypically or genetically similar diseases but are not yet linked
+        to the base disease in PrimeKG, providing interpretable repurposing hypotheses.
+      </p>
+    </details>
+
+  <!-- Analysis Explorer Buttons -->
+  <section class="card">
+    <div class="card-title">Start Exploring</div>
+    <p>Use the tools below to move from descriptive structure to potential therapeutic insight.</p>
+    <div style="display:flex; flex-wrap:wrap; gap:12px;">
+      <a href="/neighborhood" style="background:#0B3C5D;color:white;padding:9px 16px;border-radius:8px;text-decoration:none;font-size:13px;">🔍 Neighborhood Explorer</a>
+      <a href="/similarity" style="background:#14528A;color:white;padding:9px 16px;border-radius:8px;text-decoration:none;font-size:13px;">🧬 Similarity Analysis</a>
+      <a href="/repurposing" style="background:#1E6C8E;color:white;padding:9px 16px;border-radius:8px;text-decoration:none;font-size:13px;">💊 Drug Repurposing</a>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  async function fetchSummary(kind) {
+    const resp = await fetch(`/api/summary?kind=${encodeURIComponent(kind)}`);
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      return { error: data.error || `HTTP ${resp.status}` };
+    }
+    return data;
+  }
+
+  function clearOutputs() {
+    const tableDiv = document.getElementById("summaryTable");
+    if (tableDiv) tableDiv.innerHTML = "";
+  }
+
+  function describeSummary(data) {
+    const textDiv = document.getElementById("summary-text");
+
+    if (data.kind === "node_types") {
+      const total = data.total_nodes || 0;
+      const rows = data.rows || [];
+      if (!rows.length) {
+        textDiv.textContent = "No node type information available.";
+        return;
+      }
+      const top = rows.slice(0, 3);
+      const parts = top.map(
+        (r) =>
+          `${r.type} (${(r.pct * 100).toFixed(1)}% of ${total.toLocaleString()} nodes)`
+      );
+      textDiv.textContent = "Most common node types: " + parts.join("; ") + ".";
+    } else if (data.kind === "top_drugs") {
+      const rows = data.rows || [];
+      if (!rows.length) {
+        textDiv.textContent = "No drug degree information available.";
+        return;
+      }
+      const top = rows.slice(0, 3);
+      const parts = top.map((r) => `${r.drug_name} (degree ${r.degree})`);
+      textDiv.textContent =
+        "Top drugs by number of connections in PrimeKG: " + parts.join(", ") + ".";
+    } else if (data.kind === "top_diseases_drug_neighbors") {
+      const rows = data.rows || [];
+      if (!rows.length) {
+        textDiv.textContent = "No disease–drug neighbor information available.";
+        return;
+      }
+      const top = rows.slice(0, 3);
+      const parts = top.map((r) => `${r.disease_name} (${r.n_drugs} drug neighbors)`);
+      textDiv.textContent =
+        "Diseases with the most drug neighbors: " + parts.join(", ") + ".";
+    } else if (data.kind === "example_relations") {
+      textDiv.textContent =
+        "A small sample of disease-centered edges from PrimeKG, including relation labels and neighbor types.";
+    } else {
+      textDiv.textContent = "";
+    }
+  }
+
+  function renderExampleRelationsTable(rows) {
+    const tableDiv = document.getElementById("summaryTable");
+    if (!tableDiv) return;
+
+    if (!rows || !rows.length) {
+      tableDiv.innerHTML =
+        "<p style='font-size:13px;color:#555;'>No example relations available.</p>";
+      return;
+    }
+
+    const html = `
+      <div class="mini-table-wrap">
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>Disease</th>
+              <th>Relation</th>
+              <th>Neighbor</th>
+              <th>Neighbor type</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows
+              .map(
+                (r) => `
+              <tr>
+                <td>${r.disease_name ?? ""}</td>
+                <td>${r.relation ?? ""}</td>
+                <td>${r.neighbor_name ?? ""}</td>
+                <td>${r.neighbor_type ?? ""}</td>
+              </tr>`
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+    tableDiv.innerHTML = html;
+  }
+
+  function plotSummary(data) {
+    const chartDiv = document.getElementById("summaryChart");
+    clearOutputs();
+
+    // Table mode
+    if (data.kind === "example_relations") {
+      Plotly.purge(chartDiv);
+      renderExampleRelationsTable(data.rows || []);
+      return;
+    }
+
+    // Chart modes
+    const rows = data.rows || [];
+    if (!rows.length) {
+      Plotly.purge(chartDiv);
+      return;
+    }
+
+    if (data.kind === "node_types") {
+      const x = rows.map((r) => r.type);
+      const y = rows.map((r) => r.count);
+      const trace = { x, y, type: "bar", marker: { color: "#0B3C5D" } };
+      const layout = {
+        title: { text: "Node type distribution", font: { size: 16 } },
+        xaxis: { title: "Node type" },
+        yaxis: { title: "# of nodes" },
+        margin: { t: 50, l: 60, r: 20, b: 80 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "#ffffff",
+      };
+      Plotly.newPlot(chartDiv, [trace], layout, { responsive: true });
+    } else if (data.kind === "top_drugs") {
+      const y = rows.map((r) => r.drug_name);
+      const x = rows.map((r) => r.degree);
+      const trace = { x, y, type: "bar", orientation: "h", marker: { color: "#0B3C5D" } };
+      const layout = {
+        title: { text: "Top drugs by degree", font: { size: 16 } },
+        xaxis: { title: "# of edges (degree)" },
+        margin: { t: 50, l: 260, r: 20, b: 60 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "#ffffff",
+      };
+      Plotly.newPlot(chartDiv, [trace], layout, { responsive: true });
+    } else if (data.kind === "top_diseases_drug_neighbors") {
+      const y = rows.map((r) => r.disease_name);
+      const x = rows.map((r) => r.n_drugs);
+      const trace = { x, y, type: "bar", orientation: "h", marker: { color: "#0B3C5D" } };
+      const layout = {
+        title: { text: "Diseases with most drug neighbors", font: { size: 16 } },
+        xaxis: { title: "# of drug neighbors" },
+        margin: { t: 50, l: 260, r: 20, b: 60 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "#ffffff",
+      };
+      Plotly.newPlot(chartDiv, [trace], layout, { responsive: true });
+    } else {
+      Plotly.purge(chartDiv);
+    }
+  }
+
+  async function runSummary() {
+    const kindSelect = document.getElementById("summary-kind");
+    const kind = kindSelect.value;
+    const btn = document.getElementById("summary-run");
+    const errorDiv = document.getElementById("summary-error");
+
+    errorDiv.textContent = "";
+    btn.disabled = true;
+    btn.textContent = "Loading…";
+
+    try {
+      const data = await fetchSummary(kind);
+      if (data.error) {
+        errorDiv.textContent = data.error;
+        Plotly.purge("summaryChart");
+        document.getElementById("summary-text").textContent = "";
+        clearOutputs();
+        return;
+      }
+      describeSummary(data);
+      plotSummary(data);
+    } catch (err) {
+      console.error(err);
+      errorDiv.textContent = err.message || "Unexpected error.";
+      clearOutputs();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "▶ Show summary";
+    }
+  }
+
+  document.getElementById("summary-run").addEventListener("click", runSummary);
+
+  window.addEventListener("load", () => {
+    runSummary();
+  });
+</script>
+</body>
+</html>
